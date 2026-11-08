@@ -1,0 +1,32 @@
+# SSH private keys and credentials
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+ansible-venv/
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+
+# Database backups
+backups/
+*.db.gz
+*.sqlite3.gz
+
+# Ansible local files
+*.retry
+.vault_pass*
+
+# Operating system files
+.DS_Store
