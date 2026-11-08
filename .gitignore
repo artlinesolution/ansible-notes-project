@@ -33,4 +33,3 @@ backups/
 
 # Private Ansible Vault variables
 ansible/group_vars/all/vault.yml
-
