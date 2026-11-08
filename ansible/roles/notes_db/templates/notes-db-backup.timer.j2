@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Backup Timer for Ansible Notes
+
+[Timer]
+OnCalendar=*-*-* 02:00:00 UTC
+Persistent=true
+AccuracySec=1min
+Unit={{ notes_db_backup_service_name }}.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,156 @@
+---
+- name: Install Python dependencies
+  ansible.builtin.dnf:
+    name:
+      - python3
+      - python3-pip
+    state: present
+
+- name: Create notes database Linux group
+  ansible.builtin.group:
+    name: "{{ notes_db_group }}"
+    system: true
+    state: present
+
+- name: Create notes database service user
+  ansible.builtin.user:
+    name: "{{ notes_db_user }}"
+    group: "{{ notes_db_group }}"
+    system: true
+    shell: /sbin/nologin
+    create_home: false
+    state: present
+
+- name: Create required application directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ notes_db_root }}"
+      owner: root
+      group: root
+      mode: '0755'
+    - path: "{{ notes_db_app_dir }}"
+      owner: root
+      group: root
+      mode: '0755'
+    - path: "{{ notes_db_data_dir }}"
+      owner: "{{ notes_db_user }}"
+      group: "{{ notes_db_group }}"
+      mode: '0700'
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Create database Python virtual environment
+  ansible.builtin.command:
+    cmd: "python3 -m venv {{ notes_db_venv_dir }}"
+    creates: "{{ notes_db_venv_dir }}/bin/python"
+
+- name: Deploy database API source code
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../app/db/server.py"
+    dest: "{{ notes_db_app_dir }}/server.py"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart notes database service
+
+- name: Deploy database Python requirements
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../app/db/requirements.txt"
+    dest: "{{ notes_db_app_dir }}/requirements.txt"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Install database Python packages
+  ansible.builtin.pip:
+    requirements: "{{ notes_db_app_dir }}/requirements.txt"
+    executable: "{{ notes_db_venv_dir }}/bin/pip"
+  notify: Restart notes database service
+
+- name: Create protected database configuration directory
+  ansible.builtin.file:
+    path: /etc/notes-db
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Validate database API secret
+  ansible.builtin.assert:
+    that:
+      - notes_db_api_key is defined
+      - (notes_db_api_key | default('') | length) >= 32
+    fail_msg: "A database API key of at least 32 characters is required."
+  no_log: true
+
+- name: Deploy database environment configuration
+  ansible.builtin.template:
+    src: notes-db.env.j2
+    dest: /etc/notes-db/notes-db.env
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true
+  notify: Restart notes database service
+
+- name: Deploy database systemd service
+  ansible.builtin.template:
+    src: notes-db.service.j2
+    dest: "/etc/systemd/system/{{ notes_db_service_name }}.service"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart notes database service
+
+- name: Enable and start database service
+  ansible.builtin.systemd_service:
+    name: "{{ notes_db_service_name }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Create protected SQLite backup directory
+  ansible.builtin.file:
+    path: "{{ notes_db_backup_dir }}"
+    state: directory
+    owner: "{{ notes_db_user }}"
+    group: "{{ notes_db_group }}"
+    mode: '0700'
+
+- name: Deploy SQLite backup Python script
+  ansible.builtin.copy:
+    src: backup_sqlite.py
+    dest: "{{ notes_db_app_dir }}/backup_sqlite.py"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Deploy SQLite backup systemd service
+  ansible.builtin.template:
+    src: notes-db-backup.service.j2
+    dest: "/etc/systemd/system/{{ notes_db_backup_service_name }}.service"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart notes database backup timer
+
+- name: Deploy SQLite backup systemd timer
+  ansible.builtin.template:
+    src: notes-db-backup.timer.j2
+    dest: "/etc/systemd/system/{{ notes_db_backup_service_name }}.timer"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart notes database backup timer
+
+- name: Enable and start SQLite backup timer
+  ansible.builtin.systemd_service:
+    name: "{{ notes_db_backup_service_name }}.timer"
+    enabled: true
+    state: started
+    daemon_reload: true

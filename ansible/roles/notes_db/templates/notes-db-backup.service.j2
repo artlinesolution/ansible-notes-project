@@ -1,0 +1,16 @@
+[Unit]
+Description=Backup Ansible Notes SQLite Database
+After={{ notes_db_service_name }}.service
+
+[Service]
+Type=oneshot
+
+User={{ notes_db_user }}
+Group={{ notes_db_group }}
+
+WorkingDirectory={{ notes_db_app_dir }}
+
+ExecStart=/usr/bin/python3 {{ notes_db_app_dir }}/backup_sqlite.py --db {{ notes_db_data_dir }}/notes.sqlite3 --output-dir {{ notes_db_backup_dir }} --retention-days {{ notes_db_backup_retention_days }}
+
+UMask=0077
+NoNewPrivileges=true

@@ -1,0 +1,18 @@
+---
+notes_db_user: notesapi
+notes_db_group: notesapi
+
+notes_db_root: /opt/notes-db
+notes_db_app_dir: /opt/notes-db/app
+notes_db_venv_dir: /opt/notes-db/venv
+
+notes_db_data_dir: /var/lib/notes-db
+
+notes_db_bind_ip: 172.31.27.187
+notes_db_port: 5051
+
+notes_db_service_name: notes-db
+
+notes_db_backup_dir: /var/backups/notes-db
+notes_db_backup_retention_days: 7
+notes_db_backup_service_name: notes-db-backup

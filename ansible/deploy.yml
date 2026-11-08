@@ -1,0 +1,28 @@
+
+---
+# PLAY 1: Deploy the database API
+
+- name: Deploy Notes SQLite Database Server
+  hosts: database
+  become: true
+  gather_facts: true
+
+  vars_files:
+    - group_vars/all/vault.yml
+
+  roles:
+    - notes_db
+
+
+# PLAY 2: Deploy the Flask website
+
+- name: Deploy Notes Flask Web Server
+  hosts: web
+  become: true
+  gather_facts: true
+
+  vars_files:
+    - group_vars/all/vault.yml
+
+  roles:
+    - notes_web

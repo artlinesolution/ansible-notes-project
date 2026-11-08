@@ -30,3 +30,7 @@ backups/
 
 # Operating system files
 .DS_Store
+
+# Private Ansible Vault variables
+ansible/group_vars/all/vault.yml
+

@@ -1,0 +1,20 @@
+---
+# Dedicated Linux service account
+notes_web_user: notesweb
+notes_web_group: notesweb
+
+# Application directories
+notes_web_root: /opt/notes-web
+notes_web_app_dir: /opt/notes-web/app
+notes_web_venv_dir: /opt/notes-web/venv
+
+# Gunicorn settings
+notes_web_bind_ip: 127.0.0.1
+notes_web_port: 8080
+notes_web_service_name: notes-web
+
+# Database API connection
+notes_web_db_api_url: "http://172.31.27.187:5051"
+
+# NGINX
+notes_web_nginx_port: 80

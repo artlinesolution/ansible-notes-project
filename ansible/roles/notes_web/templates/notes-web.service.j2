@@ -1,0 +1,25 @@
+[Unit]
+Description=Ansible Notes Flask Web Application
+After=network.target
+
+[Service]
+Type=simple
+
+User={{ notes_web_user }}
+Group={{ notes_web_group }}
+
+WorkingDirectory={{ notes_web_app_dir }}
+
+EnvironmentFile=/etc/notes-web/notes-web.env
+
+ExecStart={{ notes_web_venv_dir }}/bin/gunicorn --workers 1 --bind {{ notes_web_bind_ip }}:{{ notes_web_port }} app:app
+
+Restart=on-failure
+RestartSec=3
+
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

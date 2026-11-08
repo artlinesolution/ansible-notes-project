@@ -1,0 +1,12 @@
+---
+- name: Restart notes database service
+  ansible.builtin.systemd_service:
+    name: "{{ notes_db_service_name }}"
+    state: restarted
+    daemon_reload: true
+
+- name: Restart notes database backup timer
+  ansible.builtin.systemd_service:
+    name: "{{ notes_db_backup_service_name }}.timer"
+    state: restarted
+    daemon_reload: true

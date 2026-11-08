@@ -1,0 +1,179 @@
+
+---
+# STEP 1: Install required Linux packages
+
+- name: Install web server system packages
+  ansible.builtin.dnf:
+    name:
+      - nginx
+      - python3
+      - python3-pip
+    state: present
+
+
+# STEP 2: Create a dedicated Linux group
+
+- name: Create notes web Linux group
+  ansible.builtin.group:
+    name: "{{ notes_web_group }}"
+    system: true
+    state: present
+
+
+# STEP 3: Create a dedicated Linux user
+
+- name: Create notes web service user
+  ansible.builtin.user:
+    name: "{{ notes_web_user }}"
+    group: "{{ notes_web_group }}"
+    system: true
+    shell: /sbin/nologin
+    create_home: false
+    state: present
+
+
+# STEP 4: Create application directories
+
+- name: Create web application directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - "{{ notes_web_root }}"
+    - "{{ notes_web_app_dir }}"
+    - "{{ notes_web_app_dir }}/templates"
+  loop_control:
+    label: "{{ item }}"
+
+
+# STEP 5: Create the Python virtual environment
+
+- name: Create web Python virtual environment
+  ansible.builtin.command:
+    cmd: "python3 -m venv {{ notes_web_venv_dir }}"
+    creates: "{{ notes_web_venv_dir }}/bin/python"
+
+
+# STEP 6: Copy the Flask application
+
+- name: Deploy Flask web application
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../app/web/app.py"
+    dest: "{{ notes_web_app_dir }}/app.py"
+    owner: root
+    group: root
+    mode: '0644'
+
+
+# STEP 7: Copy Python requirements
+
+- name: Deploy web application requirements
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../app/web/requirements.txt"
+    dest: "{{ notes_web_app_dir }}/requirements.txt"
+    owner: root
+    group: root
+    mode: '0644'
+
+
+# STEP 8: Copy the HTML template
+
+- name: Deploy Flask HTML template
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../app/web/templates/index.html"
+    dest: "{{ notes_web_app_dir }}/templates/index.html"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart notes web service
+
+
+# STEP 9: Install Python application packages
+
+- name: Install web application Python packages
+  ansible.builtin.pip:
+    requirements: "{{ notes_web_app_dir }}/requirements.txt"
+    executable: "{{ notes_web_venv_dir }}/bin/pip"
+
+
+# STEP 10: Create protected configuration directory
+
+- name: Create protected web configuration directory
+  ansible.builtin.file:
+    path: /etc/notes-web
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+
+# STEP 11: Validate the encrypted API key
+
+- name: Validate notes API key
+  ansible.builtin.assert:
+    that:
+      - notes_db_api_key is defined
+      - (notes_db_api_key | default('') | length) >= 32
+    fail_msg: "A valid Notes API key is required."
+  no_log: true
+
+
+# STEP 12: Deploy protected environment variables
+
+- name: Deploy web environment file
+  ansible.builtin.template:
+    src: notes-web.env.j2
+    dest: /etc/notes-web/notes-web.env
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true
+  notify: Restart notes web service
+
+
+# STEP 13: Deploy Gunicorn systemd configuration
+
+- name: Deploy web systemd service
+  ansible.builtin.template:
+    src: notes-web.service.j2
+    dest: "/etc/systemd/system/{{ notes_web_service_name }}.service"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart notes web service
+
+
+# STEP 14: Deploy NGINX reverse proxy configuration
+
+- name: Deploy NGINX configuration
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+    validate: '/usr/sbin/nginx -t -c %s'
+  notify: Restart NGINX
+
+
+# STEP 15: Enable and start Gunicorn
+
+- name: Enable and start notes web service
+  ansible.builtin.systemd_service:
+    name: "{{ notes_web_service_name }}.service"
+    state: started
+    enabled: true
+    daemon_reload: true
+
+
+# STEP 16: Enable and start NGINX
+
+- name: Enable and start NGINX service
+  ansible.builtin.systemd_service:
+    name: nginx.service
+    state: started
+    enabled: true

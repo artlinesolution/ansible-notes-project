@@ -1,0 +1,23 @@
+[Unit]
+Description=Ansible Notes SQLite Database API
+After=network.target
+
+[Service]
+Type=simple
+
+User={{ notes_db_user }}
+Group={{ notes_db_group }}
+
+WorkingDirectory={{ notes_db_app_dir }}
+
+EnvironmentFile=/etc/notes-db/notes-db.env
+
+ExecStart={{ notes_db_venv_dir }}/bin/gunicorn --workers 1 --bind {{ notes_db_bind_ip }}:{{ notes_db_port }} server:app
+
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
