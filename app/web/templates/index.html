@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Ansible Notes Application</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f2f5fa;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 760px;
+            margin: 50px auto;
+            padding: 25px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 14px rgba(0,0,0,0.06);
+        }
+
+        h1 {
+            color: #2563eb;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 110px;
+            box-sizing: border-box;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font: inherit;
+            resize: vertical;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: 0;
+            border-radius: 8px;
+            padding: 12px 22px;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .note {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 15px 0;
+        }
+
+        .note:last-child {
+            border-bottom: none;
+        }
+
+        .date {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .success {
+            color: #15803d;
+        }
+
+        .error {
+            color: #dc2626;
+        }
+
+        .content {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+
+        <h1>Ansible Notes Application</h1>
+        <p>Python Flask + SQLite + Ansible + AWS EC2</p>
+
+        <section class="card">
+            <h2>Create a New Note</h2>
+
+            {% if saved %}
+                <p class="success">Note saved successfully!</p>
+            {% endif %}
+
+            <form action="{{ url_for('create_note') }}"
+                  method="POST">
+
+                <textarea
+                    name="content"
+                    placeholder="Write your note here..."
+                    maxlength="1000"
+                    required></textarea>
+
+                <button type="submit">Save Note</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Saved Notes</h2>
+
+            {% if error %}
+                <p class="error">{{ error }}</p>
+            {% endif %}
+
+            {% for note in notes %}
+                <article class="note">
+                    <div class="content">{{ note.content }}</div>
+                    <p class="date">
+                        Created: {{ note.created_at }} UTC
+                    </p>
+                </article>
+            {% else %}
+                {% if not error %}
+                    <p>No notes yet.</p>
+                {% endif %}
+            {% endfor %}
+        </section>
+
+    </main>
+</body>
+</html>
